@@ -2,6 +2,8 @@
 
 Troposense is a **low-power**, **standalone** weather station designed for **reliability** and **remote data collection**. It uses AVR microcontrollers to monitor and transmit meteorological data via GSM, with a focus on power efficiency and **modularity**.
 
+For the full development log, **[click here](docs/dev-log.md)**.
+
 ## 📡 Features
 
 - Monitors: **ground and air temperature**, **humidity**, **pressure**, **wind speed**, **wind direction**, and **rainfall**
