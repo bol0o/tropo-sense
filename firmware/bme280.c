@@ -1,3 +1,10 @@
+/*
+ * BME280 sensor driver
+ * Based on original code by Michael Köhler (2017)
+ * Distributed under the GPL-3.0 license
+ * Modified by Paweł Bolek, 2025
+*/
+
 #include "bme280.h"
 #include "i2c.h"
 #include "uart.h"
