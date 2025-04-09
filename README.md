@@ -1,4 +1,4 @@
-# 🌦️ Troposense – A Self-Sustainable Weather Station
+# 🌦️ TropoSense – A Self-Sustainable Weather Station
 
 Troposense is a **low-power**, **standalone** weather station designed for **reliability** and **remote data collection**. It uses AVR microcontrollers to monitor and transmit meteorological data via GSM, with a focus on power efficiency and **modularity**.
 
@@ -46,6 +46,9 @@ Troposense is in the early stages of a redesign from a previous version. The con
     - ✅ BME280
     - ✅ DS18B20
     - ☐ GSM
+    - ☐ Real-Time monitoring AVR
+    - ☐ DS3231
+    - ☐ INA219
 - ☐ Power performance tests
 - ☐ Ruggedness tests
 - ☐ Designing the PCB
