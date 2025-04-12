@@ -1,100 +1,75 @@
 #include <avr/io.h>
-#include <util/twi.h>
-#include <util/delay.h>
-#include <string.h>
 #include <avr/interrupt.h>
+#include <avr/sleep.h>
+#include <util/delay.h>
+#include "uart.h"
+#include "i2c.h"
+#include "ds3231.h"
 
-#define I2C_SLAVE_ADDR 0x08
-#define BUFFER_SIZE 32
-#define UART_BAUDRATE 9600
+#define LED_PIN PB0
 
-volatile uint8_t received_command = 0;
-volatile char gsm_response[BUFFER_SIZE] = "INIT";  // Default response
-volatile uint8_t index = 0;  // Tracks current byte being sent
+volatile uint8_t wake_flag = 0;
 
-void uart_init() {
-    uint16_t ubrr = F_CPU / 16 / UART_BAUDRATE - 1;
-    UBRRH = (uint8_t)(ubrr >> 8);
-    UBRRL = (uint8_t)ubrr;
-    UCSRB = (1 << TXEN) | (1 << RXEN);
-    UCSRC = (1 << UCSZ1) | (1 << UCSZ0);
+ISR(INT0_vect) {
+    // Set flag and return; interrupts auto-disabled during ISR
+    wake_flag = 1;
 }
 
-void uart_send(char *data) {
-    while (*data) {
-        while (!(UCSRA & (1 << UDRE)));  // Wait until TX buffer is empty
-        UDR = *data++;
-    }
+void setup_interrupt() {
+    // INT0 on falling edge
+    MCUCR |= (1 << ISC01);
+    MCUCR &= ~(1 << ISC00);
+
+    // Enable INT0
+    GICR |= (1 << INT0);
 }
 
-void uart_receive() {
-    memset((char *)gsm_response, 0, BUFFER_SIZE);
-    uint8_t i = 0;
+void setup() {
+    DDRB |= (1 << LED_PIN);     // LED as output
+    PORTB &= ~(1 << LED_PIN);   // LED off
 
-    while (i < BUFFER_SIZE - 1) {
-        while (!(UCSRA & (1 << RXC)));  // Wait for data
-        gsm_response[i] = UDR;
-        if (gsm_response[i] == '\n') break;  // Stop on newline
-        i++;
-    }
-    gsm_response[i] = '\0';  // Null-terminate string
+    UART_init(MYUBRR);
+    I2C_init();
+
+    setup_interrupt();
+
+    // Clear any lingering alarm flags
+    DS3231_clear_alarm1_flag();
+
+    // Set first alarm
+    DS3231_set_alarm1_next_15s();
+    UART_send_string("First alarm set\r\n");
 }
 
-void i2c_init() {
-    TWAR = (I2C_SLAVE_ADDR << 1);  // Set I2C slave address
-    TWCR = (1 << TWEN) | (1 << TWEA) | (1 << TWINT) | (1 << TWIE);  // Enable I2C + interrupts
-}
+int main(void) {
+    setup();
 
-ISR(TWI_vect) {
-    switch (TWSR & 0xF8) {
-        case TW_SR_SLA_ACK:  // Master started communication
-            index = 0;  // Reset index for new read
-            TWCR |= (1 << TWINT) | (1 << TWEA);
-            break;
-
-        case TW_SR_DATA_ACK:  // Master sent data
-            received_command = TWDR;  // Store command from master
-            TWCR |= (1 << TWINT) | (1 << TWEA);
-            break;
-
-        case TW_ST_SLA_ACK:   // Master requests data
-        case TW_ST_DATA_ACK:
-        {
-            size_t length = strlen((const char *)gsm_response);
-            if (index < length) {
-                TWDR = gsm_response[index++];  // Send byte
-            } else {
-                TWDR = 0x00;  // Send null terminator at the end
-            }
-            TWCR |= (1 << TWINT) | (1 << TWEA);
-            break;
-        }
-
-        case TW_ST_LAST_DATA:
-            TWCR |= (1 << TWINT) | (1 << TWEA);
-            break;
-
-        default:
-            TWCR |= (1 << TWINT) | (1 << TWEA);
-            break;
-    }
-}
-
-void handle_request() {
-    if (received_command == 1) {  // Command received from RPi
-        uart_send("AT+CSQ\r\n");  // Example GSM query
-        _delay_ms(1000);  // Give GSM module time to respond
-        uart_receive();  // Store response in gsm_response
-        received_command = 0;  // Reset command flag
-    }
-}
-
-int main() {
-    uart_init();
-    i2c_init();
-    sei();  // Enable global interrupts
+    sei(); // Enable global interrupts
 
     while (1) {
-        handle_request();
+        if (wake_flag) {
+            wake_flag = 0;
+
+            UART_send_string("Woke up from alarm!\r\n");
+
+            // Turn on LED
+            PORTB |= (1 << LED_PIN);
+            _delay_ms(3000);
+            PORTB &= ~(1 << LED_PIN);
+
+            // Clear alarm flag
+            UART_send_string("Clearing alarm flag...\r\n");
+            DS3231_clear_alarm1_flag();
+
+            // Set next alarm
+            DS3231_set_alarm1_next_15s();
+            UART_send_string("Next alarm set for 15s\r\n");
+        }
+
+        // Sleep until interrupt
+        set_sleep_mode(SLEEP_MODE_IDLE);
+        sleep_enable();
+        sleep_cpu();
+        sleep_disable();  // Continue after wake
     }
 }
