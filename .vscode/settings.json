@@ -1,0 +1,7 @@
+{
+    "files.associations": {
+        "i2c.h": "c",
+        "uart.h": "c",
+        "ds3231.h": "c"
+    }
+}
