@@ -1,4 +1,5 @@
 #include "uart.h"
+#include <util/delay.h>
 #include <stdio.h>
 
 void UART_init(unsigned int ubrr) {
@@ -11,6 +12,10 @@ void UART_init(unsigned int ubrr) {
 void UART_send(char data) {
     while (!(UCSRA & (1 << UDRE))); // Wait until buffer is empty
     UDR = data;
+}
+
+uint8_t UART_data_available() {
+    return (UCSRA & (1 << RXC));  // RXC is set when unread data is in UDR
 }
 
 char UART_receive() {

@@ -10,7 +10,7 @@ BME280_ADDR = 0x76
 CFLAGS = -mmcu=$(MCU) -Wall -Os -DF_CPU=$(F_CPU) -DBAUD=$(BAUD)
 
 # Files
-SRC = main.c i2c.c uart.c ds3231.c
+SRC = main.c uart.c
 OBJ = $(SRC:.c=.o)
 TARGET = firmware
 
