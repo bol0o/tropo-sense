@@ -1,75 +1,77 @@
 #include <avr/io.h>
-#include <avr/interrupt.h>
-#include <avr/sleep.h>
 #include <util/delay.h>
 #include "uart.h"
-#include "i2c.h"
-#include "ds3231.h"
+#include <string.h>
 
-#define LED_PIN PB0
+#define LED_DDR  DDRD
+#define LED_PORT PORTD
+#define RED_LED    PD5
+#define YELLOW_LED PD6
+#define GREEN_LED  PD7
 
-volatile uint8_t wake_flag = 0;
-
-ISR(INT0_vect) {
-    // Set flag and return; interrupts auto-disabled during ISR
-    wake_flag = 1;
+void blink_led(uint8_t pin, uint8_t times) {
+    for (uint8_t i = 0; i < times; i++) {
+        PORTD |= (1 << pin);
+        _delay_ms(300);
+        PORTD &= ~(1 << pin);
+        _delay_ms(100);
+    }
 }
 
-void setup_interrupt() {
-    // INT0 on falling edge
-    MCUCR |= (1 << ISC01);
-    MCUCR &= ~(1 << ISC00);
+void wait_for_response_and_flash() {
+    char buffer[128];
+    uint8_t idx = 0;
+    memset(buffer, 0, sizeof(buffer));
 
-    // Enable INT0
-    GICR |= (1 << INT0);
+    // Wait up to ~5 seconds for response
+    for (uint16_t t = 0; t < 5000; t += 10) {
+        if (UART_data_available()) {
+            blink_led(GREEN_LED, 1);
+            return;
+        }
+        _delay_ms(10);
+    }
+
+    // If no response at all
+    blink_led(RED_LED, 3);
 }
 
-void setup() {
-    DDRB |= (1 << LED_PIN);     // LED as output
-    PORTB &= ~(1 << LED_PIN);   // LED off
+void send_sms() {
+    // Send AT+CMGF=0
+    UART_send_string("AT+CMGF=0\r\n");
+    blink_led(YELLOW_LED, 1);
+    wait_for_response_and_flash();
 
-    UART_init(MYUBRR);
-    I2C_init();
+    // Send length-prefixed command to send SMS (PDU mode)
+    UART_send_string("AT+CMGS=38\r\n");  // Replace 38 with your PDU message length
+    blink_led(YELLOW_LED, 1);
+    wait_for_response_and_flash();
 
-    setup_interrupt();
-
-    // Clear any lingering alarm flags
-    DS3231_clear_alarm1_flag();
-
-    // Set first alarm
-    DS3231_set_alarm1_next_15s();
-    UART_send_string("First alarm set\r\n");
+    // Send your PDU-encoded message here
+    UART_send_string("\r");  // Replace with actual valid PDU
+    UART_send(26); // CTRL+Z to send
+    blink_led(YELLOW_LED, 1);
+    wait_for_response_and_flash();
 }
+
 
 int main(void) {
-    setup();
+    // Init UART
+    UART_init(MYUBRR);
 
-    sei(); // Enable global interrupts
+    LED_DDR |= (1 << RED_LED) | (1 << YELLOW_LED) | (1 << GREEN_LED);   // Set pins as outputs
+    LED_PORT &= ~((1 << RED_LED) | (1 << YELLOW_LED) | (1 << GREEN_LED)); // Ensure all are off initially
+
+    // _delay_ms(3000);  // Give GSM module time to initialize
+    blink_led(GREEN_LED, 1);
+    send_sms();
+
+    // UART_send_string("AT\r\n");
+    // blink_led(YELLOW_LED, 1);
 
     while (1) {
-        if (wake_flag) {
-            wake_flag = 0;
-
-            UART_send_string("Woke up from alarm!\r\n");
-
-            // Turn on LED
-            PORTB |= (1 << LED_PIN);
-            _delay_ms(3000);
-            PORTB &= ~(1 << LED_PIN);
-
-            // Clear alarm flag
-            UART_send_string("Clearing alarm flag...\r\n");
-            DS3231_clear_alarm1_flag();
-
-            // Set next alarm
-            DS3231_set_alarm1_next_15s();
-            UART_send_string("Next alarm set for 15s\r\n");
-        }
-
-        // Sleep until interrupt
-        set_sleep_mode(SLEEP_MODE_IDLE);
-        sleep_enable();
-        sleep_cpu();
-        sleep_disable();  // Continue after wake
+        // Idle loop
     }
+
+    return 0;
 }
