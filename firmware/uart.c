@@ -3,24 +3,24 @@
 #include <stdio.h>
 
 void UART_init(unsigned int ubrr) {
-    UBRRH = (unsigned char)(ubrr >> 8);
-    UBRRL = (unsigned char)ubrr;
-    UCSRB = (1 << RXEN) | (1 << TXEN); // Enable RX and TX
-    UCSRC = (1 << URSEL) | (1 << UCSZ1) | (1 << UCSZ0); // 8-bit, 1 stop bit, no parity
+    UBRR0H = (unsigned char)(ubrr >> 8);
+    UBRR0L = (unsigned char)ubrr;
+    UCSR0B = (1 << RXEN0) | (1 << TXEN0); // Enable RX and TX
+    UCSR0C = (1 << UCSZ01) | (1 << UCSZ00); // 8-bit, 1 stop bit, no parity
 }
 
 void UART_send(char data) {
-    while (!(UCSRA & (1 << UDRE))); // Wait until buffer is empty
-    UDR = data;
+    while (!(UCSR0A & (1 << UDRE0))); // Wait until buffer is empty
+    UDR0 = data;
 }
 
 uint8_t UART_data_available() {
-    return (UCSRA & (1 << RXC));  // RXC is set when unread data is in UDR
+    return (UCSR0A & (1 << RXC0));  // RXC0 is set when unread data is in UDR0
 }
 
 char UART_receive() {
-    while (!(UCSRA & (1 << RXC))); // Wait until data is received
-    return UDR;
+    while (!(UCSR0A & (1 << RXC0))); // Wait until data is received
+    return UDR0;
 }
 
 void UART_send_string(const char* str) {
@@ -34,7 +34,7 @@ void UART_send_float(float value) {
     int int_part = (int)value;  // Integer part
     int frac_part = (int)((value - int_part) * 100);
 
-    snprintf(buffer, sizeof(buffer), "%d.%02d", int_part, frac_part);
+    snprintf(buffer, sizeof(buffer), "%d.%02d\n", int_part, frac_part);
     UART_send_string(buffer);
 }
 
