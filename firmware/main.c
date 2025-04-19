@@ -1,76 +1,61 @@
 #include <avr/io.h>
 #include <util/delay.h>
 #include "uart.h"
-#include <string.h>
+#include "i2c.h"
+#include <stdio.h>
 
-#define LED_DDR  DDRD
-#define LED_PORT PORTD
-#define RED_LED    PD5
-#define YELLOW_LED PD6
-#define GREEN_LED  PD7
+#define INA219_ADDRESS 0x40
 
-void blink_led(uint8_t pin, uint8_t times) {
-    for (uint8_t i = 0; i < times; i++) {
-        PORTD |= (1 << pin);
-        _delay_ms(300);
-        PORTD &= ~(1 << pin);
-        _delay_ms(100);
-    }
+uint16_t INA219_read_register(uint8_t reg) {
+    uint8_t high, low;
+
+    I2C_start_with_address(INA219_ADDRESS, 0); // Write mode
+    I2C_write(reg);
+    I2C_start_with_address(INA219_ADDRESS, 1); // Read mode
+    high = I2C_read_ack();
+    low = I2C_read_nack();
+    I2C_stop();
+
+    return (high << 8) | low;
 }
 
-void wait_for_response_and_flash() {
-    char buffer[128];
-    uint8_t idx = 0;
-    memset(buffer, 0, sizeof(buffer));
-
-    // Wait up to ~5 seconds for response
-    for (uint16_t t = 0; t < 5000; t += 10) {
-        if (UART_data_available()) {
-            blink_led(GREEN_LED, 1);
-            return;
-        }
-        _delay_ms(10);
-    }
-
-    // If no response at all
-    blink_led(RED_LED, 3);
+float INA219_read_bus_voltage() {
+    uint16_t raw = INA219_read_register(0x02);
+    raw >>= 3;
+    return raw * 0.004; // in volts
 }
 
-void send_sms() {
-    // Send AT+CMGF=0
-    UART_send_string("AT+CMGF=0\r\n");
-    blink_led(YELLOW_LED, 1);
-    wait_for_response_and_flash();
-
-    // Send length-prefixed command to send SMS (PDU mode)
-    UART_send_string("AT+CMGS=38\r\n");  // Replace 38 with your PDU message length
-    blink_led(YELLOW_LED, 1);
-    wait_for_response_and_flash();
-
-    // Send your PDU-encoded message here
-    UART_send_string("\r");  // Replace with actual valid PDU
-    UART_send(26); // CTRL+Z to send
-    blink_led(YELLOW_LED, 1);
-    wait_for_response_and_flash();
+float INA219_read_shunt_voltage() {
+    int16_t raw = (int16_t)INA219_read_register(0x01);
+    return raw * 0.00001; // in volts
 }
-
 
 int main(void) {
     // Init UART
     UART_init(MYUBRR);
 
-    LED_DDR |= (1 << RED_LED) | (1 << YELLOW_LED) | (1 << GREEN_LED);   // Set pins as outputs
-    LED_PORT &= ~((1 << RED_LED) | (1 << YELLOW_LED) | (1 << GREEN_LED)); // Ensure all are off initially
-
-    // _delay_ms(3000);  // Give GSM module time to initialize
-    blink_led(GREEN_LED, 1);
-    send_sms();
-
-    // UART_send_string("AT\r\n");
-    // blink_led(YELLOW_LED, 1);
-
+    char buffer[128];
+    
     while (1) {
-        // Idle loop
+        float bus_v = INA219_read_bus_voltage();
+        float shunt_v = INA219_read_shunt_voltage();  // Shunt voltage in volts
+        int bus_mv = (int)(bus_v * 1000);  // Bus voltage in millivolts
+        int shunt_uv = (int)(shunt_v * 1000000);  // Shunt voltage in microvolts
+
+        // Calculate current (in amps), then convert to milliamps
+        float current = shunt_v / 0.1;  // Current in amps
+        float current_ma = current * 1000;  // Convert to milliamps
+        int current_ma_int = (int)current_ma;  // Integer part
+        int current_ma_frac = (int)((current_ma - current_ma_int) * 1000);  // Fractional part in milliamps
+
+        // Print values in a readable format
+        snprintf(buffer, sizeof(buffer), 
+                "Bus: %d.%03dV, Shunt: %d uV, Current: %d.%03d mA\r\n",
+                bus_mv / 1000, bus_mv % 1000, shunt_uv, current_ma_int, current_ma_frac);
+
+        UART_send_string(buffer);
+
+        _delay_ms(50);
     }
 
     return 0;
