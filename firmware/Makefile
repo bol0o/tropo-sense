@@ -1,5 +1,5 @@
 # AVR settings
-MCU = atmega8
+MCU = atmega8a
 F_CPU = 4000000UL
 BAUD = 9600
 ONE_WIRE_PIN = PB0
