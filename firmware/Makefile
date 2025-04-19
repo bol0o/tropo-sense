@@ -10,12 +10,12 @@ BME280_ADDR = 0x76
 CFLAGS = -mmcu=$(MCU) -Wall -Os -DF_CPU=$(F_CPU) -DBAUD=$(BAUD)
 
 # Files
-SRC = main.c uart.c
+SRC = main.c uart.c i2c.c
 OBJ = $(SRC:.c=.o)
 TARGET = firmware
 
 # Raspberry Pi settings
-RPI_ADDR = 192.168.18.109
+RPI_ADDR = 192.168.0.148
 RESET_PIN = 25
 HEX_FILE = $(TARGET).hex
 
