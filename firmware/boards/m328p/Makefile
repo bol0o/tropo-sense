@@ -1,45 +1,66 @@
-# AVR settings
-MCU = atmega328p
+# --- AVR settings ---
+MCU   = atmega328p
 F_CPU = 16000000UL
-BAUD = 115200
-ONE_WIRE_PIN = PB0
-ONE_WIRE_PORT = PORTB
-ONE_WIRE_DDR = DDRB
-ONE_WIRE_PIN_REG = PINB
-BME280_ADDR = 0x76
-CFLAGS = -mmcu=$(MCU) -Wall -Os -DF_CPU=$(F_CPU) -DBAUD=$(BAUD)
+BAUD  = 115200
 
-# Files
-SRC = main.c uart_isr.c gsm_module.c
-OBJ = $(SRC:.c=.o)
-TARGET = firmware
-
-# Raspberry Pi settings
-RPI_ADDR = 192.168.0.148
-RESET_PIN = 25
-HEX_FILE = $(TARGET).hex
-
-# Compiler and tools
-CC = avr-gcc
+# --- Tools ---
+CC      = avr-gcc
 OBJCOPY = avr-objcopy
 AVRDUDE = avrdude
 
-# Default target
+# --- Build dir ---
+BUILD   = build
+
+# --- Flags ---
+CFLAGS = -mmcu=$(MCU) -Wall -Os -std=gnu11 \
+         -DF_CPU=$(F_CPU) -DBAUD=$(BAUD) \
+         -I. -I../../communication -I../../peripherals \
+         -MMD -MP
+
+# --- Sources (UWAGA: dwa poziomy w górę) ---
+SRC_MAIN = main.c
+SRC_COMM = ../../communication/uart_isr.c
+SRC_PERI = ../../peripherals/gsm_module.c
+
+# --- Objects w build/ ---
+OBJ = \
+  $(BUILD)/main.o \
+  $(BUILD)/uart_isr.o \
+  $(BUILD)/gsm_module.o
+
+DEP = $(OBJ:.o=.d)
+
+TARGET   = firmware
+ELF_FILE = $(TARGET).elf
+HEX_FILE = $(TARGET).hex
+
+# --- Default ---
 all: $(HEX_FILE)
 
-# Compile
-%.o: %.c
+# --- Compile rules ---
+$(BUILD)/main.o: $(SRC_MAIN)
+	@mkdir -p $(dir $@)
 	$(CC) $(CFLAGS) -c $< -o $@
 
-# Link
-$(TARGET).elf: $(OBJ)
+$(BUILD)/uart_isr.o: $(SRC_COMM)
+	@mkdir -p $(dir $@)
+	$(CC) $(CFLAGS) -c $< -o $@
+
+$(BUILD)/gsm_module.o: $(SRC_PERI)
+	@mkdir -p $(dir $@)
+	$(CC) $(CFLAGS) -c $< -o $@
+
+# --- Link ---
+$(ELF_FILE): $(OBJ)
 	$(CC) $(CFLAGS) -o $@ $^
 
-# Convert to HEX
-$(HEX_FILE): $(TARGET).elf
+# --- Convert to HEX ---
+$(HEX_FILE): $(ELF_FILE)
 	$(OBJCOPY) -O ihex $< $@
 
-# Flashing
+# --- Flash ---
+RPI_ADDR  = 192.168.0.148
+RESET_PIN = 25
 flash: $(HEX_FILE)
 	scp $(HEX_FILE) pi@$(RPI_ADDR):/home/pi
 	ssh pi@$(RPI_ADDR) sudo $(AVRDUDE) -c linuxspi -P /dev/spidev0.0:/dev/gpiochip0:$(RESET_PIN) -p $(MCU) -U flash:w:$(HEX_FILE)
@@ -47,6 +68,9 @@ flash: $(HEX_FILE)
 	ssh pi@$(RPI_ADDR) pinctrl set $(RESET_PIN) ip
 	$(MAKE) clean
 
-# Cleanup
+# --- Clean ---
 clean:
-	rm -f $(OBJ) $(TARGET).elf $(HEX_FILE)
+	rm -rf $(BUILD) $(ELF_FILE) $(HEX_FILE)
+
+# --- Auto deps ---
+-include $(DEP)

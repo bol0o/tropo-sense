@@ -3,11 +3,13 @@
 #include <avr/interrupt.h>
 #include <avr/sleep.h>
 #include <stdio.h>
+
 #include "uart.h"
 #include "i2c.h"
-#include "ds18b20.h"
-#include "bme280.h"
-#include "ds3231.h"
+
+#include "../peripherals/ds18b20.h"
+#include "../peripherals/bme280.h"
+#include "../peripherals/ds3231.h"
 
 volatile uint8_t wake_flag = 0;
 

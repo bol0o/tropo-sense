@@ -7,6 +7,13 @@
         "stdlib.h": "c",
         "string.h": "c",
         "usi_i2c_slave.h": "c",
-        "stdbool.h": "c"
+        "stdbool.h": "c",
+        "stdint.h": "c",
+        "__locale": "c",
+        "ios": "c",
+        "ds18b20.h": "c",
+        "bme280.h": "c",
+        "gsm_module.h": "c",
+        "uart_isr.h": "c"
     }
 }

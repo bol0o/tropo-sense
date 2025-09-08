@@ -1,27 +1,27 @@
 #ifndef F_CPU
-    #define F_CPU 16000000UL  // Default if not defined
+    #define F_CPU 16000000UL
 #endif
 
 #ifndef BAUD
-    #define BAUD 115200  // Default baud rate
+    #define BAUD 115200
 #endif
 
 #ifndef ONE_WIRE_PIN
-    #define ONE_WIRE_PIN PB0 // Default BME280 address
+    #define ONE_WIRE_PIN PB0
 #endif
 
 #ifndef ONE_WIRE_PORT
-    #define ONE_WIRE_PORT PORTB  // Default BME280 address
+    #define ONE_WIRE_PORT PORTB
 #endif
 
 #ifndef ONE_WIRE_DDR
-    #define ONE_WIRE_DDR DDRB  // Default BME280 address
+    #define ONE_WIRE_DDR DDRB
 #endif
 
 #ifndef ONE_WIRE_PIN_REG
-    #define ONE_WIRE_PIN_REG PINB  // Default BME280 address
+    #define ONE_WIRE_PIN_REG PINB
 #endif
 
 #ifndef BME280_ADDR
-    #define BME280_ADDR 0x76  // Default BME280 address
+    #define BME280_ADDR 0x76
 #endif
