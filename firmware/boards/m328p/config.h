@@ -1,9 +1,9 @@
 #ifndef F_CPU
-    #define F_CPU 8000000UL  // Default if not defined
+    #define F_CPU 16000000UL  // Default if not defined
 #endif
 
 #ifndef BAUD
-    #define BAUD 9600  // Default baud rate
+    #define BAUD 115200  // Default baud rate
 #endif
 
 #ifndef ONE_WIRE_PIN

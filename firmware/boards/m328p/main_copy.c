@@ -24,7 +24,6 @@ void setup_interrupt() {
 
 void setup() {
     UART_init(MYUBRR);
-    UART_init(MYUBRR);
     bme280_init();
     I2C_init();
 
@@ -48,6 +47,7 @@ int main(void) {
             wake_flag = 0;
 
             UART_send_string("Woke up from alarm!\r\n");
+            _delay_ms(100);
 
             int16_t ground_temp = ds18b20_readTemperature();
             float air_temp = bme280_readTemperature();
@@ -55,13 +55,18 @@ int main(void) {
             float humidity = bme280_readHumidity();
 
             UART_send_number(ground_temp);
+            _delay_ms(100);
             UART_send_float(air_temp);
+            _delay_ms(100);
             UART_send_float(pressure);
+            _delay_ms(100);
             UART_send_float(humidity);
+            _delay_ms(100);
 
             // Clear alarm flag
             UART_send_string("Clearing alarm flag...\r\n");
             DS3231_clear_alarm1_flag();
+            _delay_ms(100);
 
             // Set next alarm
             DS3231_set_alarm1_next_15s();
