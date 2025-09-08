@@ -3,7 +3,6 @@
 
 #include <avr/io.h>
 #include <util/delay.h>
-#include "config.h"
 
 void one_wire_setOutput();
 void one_wire_setInput();

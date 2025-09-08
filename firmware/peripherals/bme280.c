@@ -6,8 +6,7 @@
 */
 
 #include "bme280.h"
-#include "i2c.h"
-#include "uart.h"
+#include "../communication/i2c.h"
 #include <util/delay.h>
 
 // BME280 Calibration Coefficients
@@ -200,5 +199,6 @@ float bme280_readHumidity() {
     v_x1_u32r = (v_x1_u32r < 0) ? 0 : v_x1_u32r;
     v_x1_u32r = (v_x1_u32r > 419430400) ? 419430400 : v_x1_u32r;
     float h = (v_x1_u32r >> 12);
+    
     return h / 1024;
 }

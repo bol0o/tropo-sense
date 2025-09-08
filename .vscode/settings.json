@@ -3,6 +3,10 @@
         "i2c.h": "c",
         "uart.h": "c",
         "ds3231.h": "c",
-        "stdio.h": "c"
+        "stdio.h": "c",
+        "stdlib.h": "c",
+        "string.h": "c",
+        "usi_i2c_slave.h": "c",
+        "stdbool.h": "c"
     }
 }

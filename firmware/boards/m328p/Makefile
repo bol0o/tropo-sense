@@ -1,7 +1,7 @@
 # AVR settings
 MCU = atmega328p
-F_CPU = 8000000UL
-BAUD = 9600
+F_CPU = 16000000UL
+BAUD = 115200
 ONE_WIRE_PIN = PB0
 ONE_WIRE_PORT = PORTB
 ONE_WIRE_DDR = DDRB
@@ -10,7 +10,7 @@ BME280_ADDR = 0x76
 CFLAGS = -mmcu=$(MCU) -Wall -Os -DF_CPU=$(F_CPU) -DBAUD=$(BAUD)
 
 # Files
-SRC = main.c uart.c i2c.c bme280.c ds18b20.c one_wire.c ds3231.c
+SRC = main.c uart_isr.c gsm_module.c
 OBJ = $(SRC:.c=.o)
 TARGET = firmware
 

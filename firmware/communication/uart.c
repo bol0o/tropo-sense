@@ -3,6 +3,8 @@
 #include <stdio.h>
 
 void UART_init(unsigned int ubrr) {
+    UCSR0A |= (1 << U2X0); // Enable fast mode to allow higher BAUD
+    
     UBRR0H = (unsigned char)(ubrr >> 8);
     UBRR0L = (unsigned char)ubrr;
     UCSR0B = (1 << RXEN0) | (1 << TXEN0); // Enable RX and TX
@@ -20,6 +22,7 @@ uint8_t UART_data_available() {
 
 char UART_receive() {
     while (!(UCSR0A & (1 << RXC0))); // Wait until data is received
+    
     return UDR0;
 }
 
