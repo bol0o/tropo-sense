@@ -1,7 +1,9 @@
 #include <avr/io.h>
 #include <util/delay.h>
 #include "config.h"
-#include "../../peripherals/gsm_module.h"
+#include "uart_isr.h" 
+#include "gsm_module.h"
+#include <avr/interrupt.h>  
 
 void swtich_gsm(void) {
     // ustaw PB1 jako wyjście
@@ -33,7 +35,7 @@ int main(void){
     // gsm_http_post(url, ctyp, body, strlen(body), /*HTTPDATA timeout s*/5, /*ACTION timeout ms*/120000);
 
     /* (3) SMS z polskimi znakami */
-    // gsm_sms_send_ucs2("48xxxxxxxxx, "Test (źćń)", /*retries*/3, /*overall ms*/120000);
+    gsm_sms_send_ucs2("48668440128", "Test (źćń)", /*retries*/3, /*overall ms*/120000);
 
     swtich_gsm();
 }

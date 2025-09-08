@@ -1,27 +1,65 @@
+/**
+ * @file i2c.h
+ * @brief Low-level I²C/TWI driver for AVR.
+ *
+ * Provides blocking primitives for start, stop, read and write.
+ * Higher-level device drivers (sensors, EEPROM, etc.) should
+ * build on top of this interface.
+ */
+
 #ifndef I2C_H
 #define I2C_H
 
-#include <avr/io.h>
+#include <stdint.h>
 
-// Initializes I2C interface
-void I2C_init();
+#ifdef __cplusplus
+extern "C" {
+#endif
 
-// Sends a start condition
-void I2C_start();
+/**
+ * @brief Initialize I²C (TWI) hardware.
+ *
+ * Prescaler set to 1, bit rate default corresponds to ~100 kHz at F_CPU=16 MHz.
+ */
+void I2C_init(void);
 
-// Sends a stop condition
-void I2C_stop();
+/**
+ * @brief Send START condition.
+ */
+void I2C_start(void);
 
-// Writes a byte to I2C
+/**
+ * @brief Send STOP condition.
+ */
+void I2C_stop(void);
+
+/**
+ * @brief Write one byte to I²C.
+ * @param data Byte to transmit.
+ */
 void I2C_write(uint8_t data);
 
-// Sends a start condition followed by device address and R/W mode (0 for write, 1 for read)
+/**
+ * @brief Send START and then address + R/W bit.
+ * @param address 7-bit device address.
+ * @param read 0 = write, 1 = read.
+ */
 void I2C_start_with_address(uint8_t address, uint8_t read);
 
-// Reads a byte with ACK
-uint8_t I2C_read_ack();
+/**
+ * @brief Read one byte and send ACK.
+ * @return Received byte.
+ */
+uint8_t I2C_read_ack(void);
 
-// Reads a byte with NACK
-uint8_t I2C_read_nack();
+/**
+ * @brief Read one byte and send NACK (end of transfer).
+ * @return Received byte.
+ */
+uint8_t I2C_read_nack(void);
 
-#endif // I2C_H
+#ifdef __cplusplus
+}
+#endif
+
+#endif /* I2C_H */
