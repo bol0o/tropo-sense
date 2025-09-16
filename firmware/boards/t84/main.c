@@ -1,30 +1,44 @@
-#define F_CPU 8000000UL
+// main.c — ATtiny84 + USI I2C Slave Driver (CalcProgrammer1)
 #include <avr/io.h>
+#include <avr/interrupt.h>
+#include "usi_i2c_slave.h"
 #include <util/delay.h>
 
-void blink_led(void)
-{
-    PORTC |= (1 << PC0);   // LED ON
-    _delay_ms(100);        // 100 ms świecenia
-    PORTC &= ~(1 << PC0);  // LED OFF
+// *** WAŻNE ***
+// Ta tablica jest zdefiniowana w bibliotece (usi_i2c_slave.c).
+// My tylko deklarujemy do niej extern i wpisujemy wskaźniki:
+extern unsigned char* USI_Slave_register_buffer[];
+
+// Własne zmienne „wystawiane” po I2C
+volatile uint8_t led_ctrl = 0;   // rejestr 0x00: 0/1 -> LED OFF/ON
+
+static inline void led_init(void){
+  DDRB  |= (1<<PB0);
+  PORTB &= ~(1<<PB0);
+}
+static inline void led_apply(uint8_t v){
+  if (v & 1) PORTB |=  (1<<PB0);
+  else       PORTB &= ~(1<<PB0);
 }
 
-int main(void)
-{
-    // PB1 i PC0 jako wyjścia
-    DDRB |= (1 << PB1);
-    DDRC |= (1 << PC0);
+int main(void){
+  led_init();
 
-    while (1)
-    {
-        // Włącz MOSFET
-        PORTB |= (1 << PB1);
-        blink_led();
-        for (uint8_t i = 0; i < 30; i++) _delay_ms(1000); // 30 s
+  // 1) Zmapuj swoje zmienne na kolejne rejestry I2C
+  //    (każda pozycja to *wskaźnik na bajt*)
+  USI_Slave_register_buffer[0] = (unsigned char*)&led_ctrl;           // 0x00
 
-        // Wyłącz MOSFET
-        PORTB &= ~(1 << PB1);
-        blink_led();
-        for (uint8_t i = 0; i < 30; i++) _delay_ms(1000); // 30 s
-    }
+  // 2) Start slava pod adresem 0x27
+  USI_I2C_Init(0x27);
+
+  sei();
+
+  // Pętla: licznik i reakcja na zapis do rejestru 0x00
+  for(;;){
+    // prosty „heartbeat”
+    led_apply(led_ctrl);
+
+    // drobna pauza (opcjonalnie)
+    _delay_ms(10);
+  }
 }

@@ -32,9 +32,20 @@ def calculate_possible_R1(lookup_table, Vin, target, available_resistors, n):
     return possible_resistors
 
 def get_voltage_values(lookup_table, R1):
+    vals = []
     for resistance, direction in lookup_table.items():
-        output = round(Vin * (resistance / (R1 + resistance)), 2)
-        print(f"{{{output}, {direction}}},")
+        output = round(Vin * (resistance / (R1 + resistance)), 3)
+        vals.append(output)
+        print(f"{direction}: {output},")
+        
+    vals.sort()
+    min_gap = float('inf')
+    for i in range(1, len(vals)):
+        min_gap = min(min_gap, vals[i] - vals[i - 1])
+        
+    print(round(min_gap, 2))
+        
+    
 
 lookup_table = {
     33000: 0,
@@ -54,6 +65,45 @@ lookup_table = {
     64900: 315,
     21880: 337.5
 }
+
+read_ranges = {
+    0: [4.53, 4.57],
+    22.5: [3.34, 3.37],
+    45: [3.55, 3.60],
+    67.5: [1.055, 1.072],
+    90: [1.158, 1.165],
+    112.5: [0.879, 0.885],
+    135: [2.017, 2.023],
+    157.5: [1.497, 1.518],
+    180: [2.691, 2.732],
+    202.5: [2.466, 2.492],
+    225: [4.133, 4.175],
+    247.5: [4.047, 4.097],
+    270: [4.896, 4.912],
+    292.5: [4.589, 4.642],
+    315: [4.692, 4.785],
+    337.5: [4.350, 4.400],
+}
+
+expected = {
+    0: 4.545,
+    22.5: 3.328,
+    45: 3.565,
+    67.5: 1.063,
+    90: 1.163,
+    112.5: 0.863,
+    135: 2.0,
+    157.5: 1.497,
+    180: 2.708,
+    202.5: 2.438,
+    225: 4.145,
+    247.5: 4.053,
+    270: 4.866,
+    292.5: 4.637,
+    315: 4.758,
+    337.5: 4.345,
+}
+
 available_resistors = [
     [1.0, 10, 100, 1.0 * 1000, 10 * 1000, 100 * 1000, 1.0 * 1000000],
     [1.1, 11, 110, 1.1 * 1000, 11 * 1000, 110 * 1000, 1.1 * 1000000],
@@ -80,10 +130,17 @@ available_resistors = [
     [8.2, 82, 820, 8.2 * 1000, 82 * 1000, 820 * 1000, 8.2 * 1000000],
     [9.1, 91, 910, 9.1 * 1000, 91 * 1000, 910 * 1000, 9.1 * 1000000]
 ]
-Vin = 3.3
-target = 2.56
+Vin = 5
+target = 5
 
-print(calculate_possible_R1(lookup_table, Vin, target, available_resistors, 10))
+# print(calculate_possible_R1(lookup_table, Vin, target, available_resistors, 10))
 
-R1 = 47000
+R1 = 3300
 # get_voltage_values(lookup_table, R1)
+
+max_diff = float('-inf')
+for key, val in expected.items():
+    print(f"{key}: {round(abs(val - read_ranges[key][0]), 3)} {round(abs(val - read_ranges[key][1]), 3)}")
+    max_diff = max(max_diff, round(abs(val - read_ranges[key][0]), 3), round(abs(val - read_ranges[key][1]), 3))
+    
+print(f"Maximum difference: {max_diff}")
